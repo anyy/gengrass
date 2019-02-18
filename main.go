@@ -12,17 +12,15 @@ import (
 	"github.com/urfave/cli"
 )
 
-var symbol string
+var symbol = " ■"
 var header string
-
 var monthsOfYear []Month
+var sunday, monday, tuesday, wednesday, thursday, friday, saturday []string
 
 type Month struct {
 	name  string
 	space int
 }
-
-var sunday, monday, tuesday, wednesday, thursday, friday, saturday []string
 
 func main() {
 	app := cli.NewApp()
@@ -42,9 +40,8 @@ func command(c *cli.Context) {
 		return
 	} else if c.NArg() == 2 {
 		setSymbol(c.Args()[1])
-	} else {
-		symbol = " ■"
 	}
+
 	username := c.Args()[0]
 	user := fmt.Sprintf("https://github.com/users/%s/contributions", username)
 
@@ -64,30 +61,26 @@ func command(c *cli.Context) {
 	}
 	header = doc.Find("h2[class='f4 text-normal mb-2']").Text()
 
-	lastMonthP := 0
+	var lastMonthX int
 	doc.Find(".month").Each(func(i int, s *goquery.Selection) {
-		x, _ := s.Attr("x")
-		p, _ := strconv.Atoi(x)
+		attr, _ := s.Attr("x")
+		x, _ := strconv.Atoi(attr)
 
 		var space int
 		if i == 0 {
-			if p/20 >= 1 {
+			if x/20 >= 1 {
 				space = 2
-			} else {
-				space = 0
 			}
 		} else {
-			space = (p-lastMonthP)/10 + 1
+			space = (x-lastMonthX)/10 + 1
 			if space == 3 {
 				space = 1
-			} else if space == 5 {
-				space = 5
-			} else {
+			} else if space != 5 {
 				space = 7
 			}
 		}
 		monthsOfYear = append(monthsOfYear, Month{name: s.Text(), space: space})
-		lastMonthP = p
+		lastMonthX = x
 	})
 
 	doc.Find(".js-calendar-graph-svg g g").Each(func(_ int, s *goquery.Selection) {
@@ -113,14 +106,11 @@ func setSymbol(input string) {
 	s := strings.TrimSpace(input)
 	if len(s) != 0 {
 		symbol = " " + s[:1]
-	} else {
-		symbol = " ■"
 	}
 }
 
 func execute() {
-	fmt.Print("\n" + strings.Repeat("=", 120) + "\n")
-	fmt.Println(header)
+	fmt.Print("\n" + strings.Repeat("=", 120) + "\n" + header + "\n")
 	printMonth()
 	printContributions("Sun", sunday)
 	printContributions("Mon", monday)
@@ -135,11 +125,7 @@ func execute() {
 func printMonth() {
 	fmt.Print(strings.Repeat(" ", 10))
 	for _, m := range monthsOfYear {
-		var pos string
-		for i := 0; i < m.space; i++ {
-			pos += " "
-		}
-		fmt.Print(pos + m.name)
+		fmt.Print(strings.Repeat(" ", m.space) + m.name)
 	}
 	fmt.Println()
 }
